@@ -87,6 +87,7 @@ def try_sink_float(fx, fy, tx, ty, pix, npix):
         npix[ty][tx] = from_type
         return True
 
+
 def sand(x, y, pix, npix):
     if npix[y][x]:
         # this pixel has already been updated
@@ -129,6 +130,15 @@ def water(x, y, pix, npix):
         return
     
     left = random.randint(0, 1) == 0
+
+    if left and x > 0 and can_move_to(x - 1, y + 1, pix, npix):
+        npix[y+1][x-1] = Pix.WATER
+        return
+    
+    if not left and x < SCREEN_WIDTH-1 and can_move_to(x + 1, y + 1, pix, npix):
+        npix[y+1][x+1] = Pix.WATER
+        return
+
     if left and x > 0 and can_move_to(x - 1, y, pix, npix):
         npix[y][x-1] = Pix.WATER
         return
@@ -265,7 +275,7 @@ def main():
     selected_pix = Pix.SAND
     draw_size = 0
 
-    snapshots = []
+    snapshots = [pix_copy(pix)]
     snapshot_index = 0
 
     sim_accumulator = 0
@@ -277,17 +287,17 @@ def main():
             pix = update(pix)
             sim_accumulator = 0
         
-        if pygame.mouse.get_just_pressed()[0]:
-            snapshots = snapshots[:snapshot_index]
-            snapshots.append(pix_copy(pix))
-            snapshot_index += 1
-
         if pygame.mouse.get_pressed()[0]:
             mx, my = pygame.mouse.get_pos()
             mx //= SCALE
             my //= SCALE
             if in_screen(mx, my):
                 set_pix_around(mx, my, selected_pix, draw_size, pix)  
+
+        if pygame.mouse.get_just_released()[0]:
+            snapshot_index += 1
+            snapshots = snapshots[:snapshot_index]
+            snapshots.append(pix_copy(pix))
         
         draw(screen, canvas, pix)
 
@@ -305,12 +315,13 @@ def main():
             if event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_z and (event.mod & pygame.KMOD_CTRL):
                     if snapshot_index > 0:
-                        pix = snapshots[snapshot_index - 1]
                         snapshot_index -= 1
+                        pix = pix_copy(snapshots[snapshot_index])
                 if event.key == pygame.K_y and (event.mod & pygame.KMOD_CTRL):
-                    if snapshot_index < len(snapshots):
+                    if snapshot_index < len(snapshots) - 1:
                         snapshot_index += 1
-                        pix = snapshots[snapshot_index]
+                        pix = pix_copy(snapshots[snapshot_index])
+        print(len(snapshots), snapshot_index)
 
     pygame.quit()
 
