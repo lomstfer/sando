@@ -268,11 +268,19 @@ def main():
     pygame.init()
     screen = pygame.display.set_mode((SCREEN_WIDTH * SCALE, SCREEN_HEIGHT * SCALE))
     canvas = pygame.Surface((SCREEN_WIDTH, SCREEN_HEIGHT))
-    pygame.display.set_caption("sando")
+
+    ctrls_str = " | ".join(f"{pygame.key.name(v).capitalize()}: {k.name.capitalize()}" for k, v in INPUT.items())
+
+    pygame.display.set_caption(f"sando               {ctrls_str}      Scroll: Size")
     clock = pygame.Clock()
 
     pix = empty_pix()
+
     selected_pix = Pix.SAND
+    icon = pygame.Surface((1, 1))
+    icon.fill(COLORS[selected_pix])
+    pygame.display.set_icon(icon)
+
     draw_size = 0
 
     snapshots = [pix_copy(pix)]
@@ -310,6 +318,8 @@ def main():
                 for k in INPUT:
                     if event.key == INPUT[k]:
                         selected_pix = k
+                        icon.fill(COLORS[selected_pix])
+                        pygame.display.set_icon(icon)
             if event.type == pygame.MOUSEWHEEL:
                 draw_size = max(0, draw_size + event.y)
             if event.type == pygame.KEYDOWN:
@@ -321,7 +331,6 @@ def main():
                     if snapshot_index < len(snapshots) - 1:
                         snapshot_index += 1
                         pix = pix_copy(snapshots[snapshot_index])
-        print(len(snapshots), snapshot_index)
 
     pygame.quit()
 
