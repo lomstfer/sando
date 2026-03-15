@@ -10,7 +10,6 @@ FPS = 60
 SIM_FPS = 20
 
 
-# ordered by "density"
 class Pix(enum.IntEnum):
     EMPTY = 0
     STEAM = 1
@@ -40,11 +39,12 @@ INPUT = {
     Pix.STEAM: pygame.K_d,
 }
 
-FLOAT_OR_SINKABLE = {
-    Pix.EMPTY,  
-    Pix.SAND,
-    Pix.WATER,
-    Pix.LAVA,  
+FLOAT_SINK_DENSITY = {
+    Pix.STEAM: -1,
+    Pix.EMPTY: 0,  
+    Pix.WATER: 1,
+    Pix.LAVA: 2,  
+    Pix.SAND: 3,
 }
 
 
@@ -65,25 +65,27 @@ def can_move_to(x, y, pix, npix):
     return pix[y][x] == Pix.EMPTY and npix[y][x] == Pix.EMPTY
 
 
-def try_move_to(fx, fy, tx, ty, pix, npix):
+def try_sink_float(fx, fy, tx, ty, pix, npix):
     if not in_screen(fx, fy) or not in_screen(tx, ty):
+        return False
+    
+    if npix[fy][fx] or npix[ty][tx]:
+        # pixels has already been updated
         return False
     
     from_type = pix[fy][fx]
     to_type = pix[ty][tx]
 
-    if not (from_type in FLOAT_OR_SINKABLE and to_type in FLOAT_OR_SINKABLE):
-        npix[fy][fx] = from_type
+    if not (from_type in FLOAT_SINK_DENSITY and to_type in FLOAT_SINK_DENSITY):
         return False
 
-    sinking = fy < ty and from_type > to_type
-    floating = fy > ty and from_type < to_type
+    sinking = fy < ty and FLOAT_SINK_DENSITY[from_type] > FLOAT_SINK_DENSITY[to_type]
+    floating = fy > ty and FLOAT_SINK_DENSITY[from_type] < FLOAT_SINK_DENSITY[to_type]
+    
     if sinking or floating:
         npix[fy][fx] = to_type
         npix[ty][tx] = from_type
         return True
-
-    npix[fy][fx] = from_type
 
 def sand(x, y, pix, npix):
     if npix[y][x]:
@@ -94,108 +96,110 @@ def sand(x, y, pix, npix):
         npix[y][x] = Pix.SAND
         return
 
-    if try_move_to(x, y, x, y+1, pix, npix):
+    if try_sink_float(x, y, x, y+1, pix, npix):
         return
     
     left = random.randint(0, 1) == 0
     if left and x > 0 and can_move_to(x - 1, y + 1, pix, npix):
-        npix[y][x] = Pix.EMPTY
         npix[y+1][x-1] = Pix.SAND
         return
     
     if not left and x < SCREEN_WIDTH-1 and can_move_to(x + 1, y + 1, pix, npix):
-        npix[y][x] = Pix.EMPTY
         npix[y+1][x+1] = Pix.SAND
         return
-
     
+    npix[y][x] = Pix.SAND    
 
 
 def water(x, y, pix, npix):
+    if npix[y][x]:
+        # this pixel has already been updated
+        return
+    
     for nx, ny in get_neighbours_in_screen(x, y):
         if pix[ny][nx] == Pix.LAVA:
             npix[y][x] = Pix.STEAM
             return
 
     if y >= SCREEN_HEIGHT-1:
+        npix[y][x] = Pix.WATER
         return
 
-    if can_move_to(x, y + 1, pix, npix):
-        npix[y][x] = Pix.EMPTY
-        npix[y+1][x] = Pix.WATER
+    if try_sink_float(x, y, x, y+1, pix, npix):
         return
     
     left = random.randint(0, 1) == 0
-
     if left and x > 0 and can_move_to(x - 1, y, pix, npix):
-        npix[y][x] = Pix.EMPTY
         npix[y][x-1] = Pix.WATER
         return
-
+    
     if not left and x < SCREEN_WIDTH-1 and can_move_to(x + 1, y, pix, npix):
-        npix[y][x] = Pix.EMPTY
         npix[y][x+1] = Pix.WATER
         return
+    
+    npix[y][x] = Pix.WATER
 
 
 def rock(x, y, pix, npix):
+    npix[y][x] = Pix.ROCK
     return
 
 
 def wood(x, y, pix, npix):
+    for nx, ny in get_neighbours_in_screen(x, y):
+        if pix[ny][nx] == Pix.LAVA:
+            npix[y][x] = Pix.EMPTY
+            return
+    npix[y][x] = Pix.WOOD
     return
 
 
 def lava(x, y, pix, npix):
-    burned = False
-    for nx, ny in get_neighbours_in_screen(x, y):
-        if pix[ny][nx] == Pix.WOOD:
-            npix[ny][nx] = Pix.EMPTY
-            burned = True
-    if burned:
+    if npix[y][x]:
+        # this pixel has already been updated
         return
 
     if y >= SCREEN_HEIGHT-1:
+        npix[y][x] = Pix.LAVA
         return
 
-    if can_move_to(x, y + 1, pix, npix):
-        npix[y][x] = Pix.EMPTY
-        npix[y+1][x] = Pix.LAVA
+    if try_sink_float(x, y, x, y+1, pix, npix):
         return
     
     left = random.randint(0, 1) == 0
-
     if left and x > 0 and can_move_to(x - 1, y, pix, npix):
-        npix[y][x] = Pix.EMPTY
         npix[y][x-1] = Pix.LAVA
         return
-
+    
     if not left and x < SCREEN_WIDTH-1 and can_move_to(x + 1, y, pix, npix):
-        npix[y][x] = Pix.EMPTY
         npix[y][x+1] = Pix.LAVA
         return
+    
+    npix[y][x] = Pix.LAVA
 
 
 def steam(x, y, pix, npix):
-    if y <= 0:
+    if npix[y][x]:
+        # this pixel has already been updated
         return
 
-    if can_move_to(x, y - 1, pix, npix):
-        npix[y][x] = Pix.EMPTY
-        npix[y-1][x] = Pix.STEAM
+    if y <= 0:
+        npix[y][x] = Pix.STEAM
+        return
+
+    if try_sink_float(x, y, x, y-1, pix, npix):
         return
     
     left = random.randint(0, 1) == 0
-
     if left and x > 0 and can_move_to(x - 1, y, pix, npix):
-        npix[y][x] = Pix.EMPTY
         npix[y][x-1] = Pix.STEAM
         return
-
+    
     if not left and x < SCREEN_WIDTH-1 and can_move_to(x + 1, y, pix, npix):
-        npix[y][x] = Pix.EMPTY
         npix[y][x+1] = Pix.STEAM
         return
+    
+    npix[y][x] = Pix.STEAM
 
 
 def pix_copy(pix):
@@ -208,11 +212,8 @@ def empty_pix():
 
 def update(pix):
     npix = empty_pix()
-    nonempty = 0
     for y in range(SCREEN_HEIGHT):
         for x in range(SCREEN_WIDTH):
-            if pix[y][x]:
-                nonempty += 1
             if not pix[y][x]:
                 continue
             if pix[y][x] == Pix.SAND:
@@ -227,18 +228,19 @@ def update(pix):
                 lava(x, y, pix, npix)
             if pix[y][x] == Pix.STEAM:
                 steam(x, y, pix, npix)
-    print(nonempty)
     return npix
 
 
 def draw(screen, canvas, pix):
     canvas.fill((30, 30, 30))
+    nonempty = 0
     for y in range(SCREEN_HEIGHT):
         for x in range(SCREEN_WIDTH):
             if not pix[y][x]:
                 continue
+            else:
+                nonempty += 1
             canvas.set_at((x, y), COLORS[pix[y][x]])
-
     pygame.transform.scale(canvas, (SCREEN_WIDTH * SCALE, SCREEN_HEIGHT * SCALE), screen)
     pygame.display.flip()
 
