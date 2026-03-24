@@ -5,11 +5,21 @@ import utils
 import consts
 
 
-def simulate(pixels_current, pixels_next, pixel_intents, pixel_directions):
+def simulate(pixels_current, 
+             pixels_next, 
+             pixel_intents,
+             pixel_directions):
+    
     pixel_intents.fill(0)
-    intents.update_intents(pixels_current, pixel_intents, pixel_directions)
+    intents.update_intents(pixels_current, 
+                           pixel_intents, 
+                           pixel_directions,
+                           )
 
-    intents.update_pixels_from_intents(pixels_current, pixels_next, pixel_intents, pixel_directions)
+    intents.update_pixels_from_intents(pixels_current, 
+                                       pixels_next, 
+                                       pixel_intents, 
+                                       pixel_directions)
 
 
 def main():
@@ -31,7 +41,7 @@ def main():
     render_surface = pygame.Surface((consts.WIDTH, consts.HEIGHT))
     clock = pygame.time.Clock()
     
-    draw_size = 50
+    draw_size = 10
     time_elapsed = 0.0
     running = True
     update_fps = 60

@@ -72,6 +72,16 @@ def has_color(x, y, color, pixels):
 
 
 @ti.func
+def is_color(col1, col2):
+    is_of_color = 1
+    for channel in ti.static(range(3)):
+        is_match = ti.cast(col1[channel] == col2[channel], ti.i32)
+        is_of_color = is_of_color & is_match
+        
+    return is_of_color
+
+
+@ti.func
 def get_color(x, y, pixels):
     color = ti.Vector([0, 0, 0])
     for channel in ti.static(range(3)):
@@ -103,7 +113,7 @@ def set_pix_around(x: ti.i32, y: ti.i32, radius: ti.i32, color: ti.types.vector(
     for w, h in ti.ndrange(radius * 2 + 1, radius * 2 + 1):
         xs = x + w - radius
         ys = y + h - radius
-        if not in_view(xs, ys, pixels) or xs % 2 == 0 or ys % 2 == 0:
+        if not in_view(xs, ys, pixels):# or xs % 2 == 0 or ys % 2 == 0:
             continue
         if (xs - x) ** 2 + (ys - y) ** 2 <= radius ** 2:
             set_pixel(xs, ys, color, pixels)
@@ -115,3 +125,20 @@ def count_nonempty(pixels: ti.template()) -> ti.i32: # type: ignore
         if not is_empty(x, y, pixels):
             count += 1
     return count
+
+
+@ti.func
+def set_2Dvec(x, y, nx, ny, field):
+    field[x, y][0] = ti.cast(nx, ti.i8)
+    field[x, y][1] = ti.cast(ny, ti.i8)
+
+
+@ti.func
+def get_2Dvec(x, y, field):
+    return field[x, y][0], field[x, y][1]
+
+
+@ti.func
+def has_2Dvec(x, y, x2, y2, field) -> bool:
+    x, y = get_2Dvec(x, y, field)
+    return x == x2 and y == y2
