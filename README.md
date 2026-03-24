@@ -1,3 +1,1 @@
-pixel simulation
-
-![sand simulation](sando.gif)
+Sand simulation on the GPU

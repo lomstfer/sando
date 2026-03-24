@@ -1,0 +1,61 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# uv and Virtual Environments
+# (uv uses .venv by default)
+.venv/
+venv/
+env/
+ENV/
+
+# C extensions
+*.so
+
+# Distribution / packaging
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+share/python-wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# Local environment variables
+.env
+.env.local
+
+# Pytest / Coverage
+.coverage
+.coverage.*
+.cache
+nosetests.xml
+coverage.xml
+*.cover
+*.sved
+htmlcov/
+.pytest_cache/
+
+# Type checking and linting caches
+.mypy_cache/
+.pyre/
+.typeguard_cache/
+.ruff_cache/
+
+# IDEs and Editors
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
