@@ -8,7 +8,7 @@ This project uses [uv](https://github.com/astral-sh/uv) for Python package manag
 
 ### How to
 * Q: Sand
-* E: Water
+* W: Water
 * Left Mouse Button: Add chosen material
 * Right Mouse Button: Erase
 * Scroll: Change size 
