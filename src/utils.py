@@ -118,6 +118,7 @@ def set_pix_around(x: ti.i32, y: ti.i32, radius: ti.i32, color: ti.types.vector(
         if (xs - x) ** 2 + (ys - y) ** 2 <= radius ** 2:
             set_pixel(xs, ys, color, pixels)
 
+
 @ti.kernel
 def count_nonempty(pixels: ti.template()) -> ti.i32: # type: ignore
     count = 0
@@ -142,3 +143,10 @@ def get_2Dvec(x, y, field):
 def has_2Dvec(x, y, x2, y2, field) -> bool:
     x, y = get_2Dvec(x, y, field)
     return x == x2 and y == y2
+
+
+@ti.func 
+def is_heavier(x, y, x2, y2, pixels):
+    col1 = get_color(x, y, pixels)
+    col2 = get_color(x2, y2, pixels)
+    return consts.density_of_color(col1) > consts.density_of_color(col2)

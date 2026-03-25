@@ -11,10 +11,14 @@ def simulate(pixels_current,
              pixel_directions):
     
     pixel_intents.fill(0)
-    intents.update_intents(pixels_current, 
-                           pixel_intents, 
-                           pixel_directions,
-                           )
+
+    for color in consts.COLORS:
+        intents.update_intents(pixels_current,
+                               color,
+                               pixel_intents, 
+                               pixel_directions,
+                            )
+    
 
     intents.update_pixels_from_intents(pixels_current, 
                                        pixels_next, 
@@ -93,7 +97,6 @@ def main():
                 simulate(pixels_current, pixels_next, pixel_intents, pixel_directions)
                 pixels_current, pixels_next = pixels_next, pixels_current
 
-
         # draw ----------------------
         frame = pixels_current.to_numpy()
         pygame.surfarray.blit_array(render_surface, frame)
@@ -107,7 +110,6 @@ def main():
 
         pygame.display.flip()
         
-
 
     pygame.quit()
 
