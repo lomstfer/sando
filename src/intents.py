@@ -66,30 +66,6 @@ def water_slide_intent(x, y, intents, directions, pixels) -> bool:
     return can_slide_left or can_slide_right
 
 
-# @ti.func
-# def float_sink_intent(x, y, intents, pixels):
-#     set_intent = False
-#     this = utils.get_color(x, y, pixels)
-#     this_density = consts.density_of_color(this)
-
-#     if utils.in_view(x, y-1, pixels):
-#         above = utils.get_color(x, y-1, pixels)
-#         above_density = consts.density_of_color(above)
-#         if this_density < above_density:
-#             utils.set_2Dvec(x, y, 0, -1, intents)
-#             set_intent = True
-
-#     if not set_intent:
-#         if utils.in_view(x, y+1, pixels):
-#             below = utils.get_color(x, y+1, pixels)
-#             below_density = consts.density_of_color(below)
-#             if this_density > below_density:
-#                 utils.set_2Dvec(x, y, 0, 1, intents)
-#                 set_intent = True
-
-#     return set_intent
-
-
 @ti.func
 def has_neighbour_with_intent_to_it(x, y, pixels, intents) -> bool:
     has = False
