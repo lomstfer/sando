@@ -8,11 +8,13 @@ EMPTY_COLOR = (30, 30, 30)
 SAND_COLOR = (210, 200, 200)
 WATER_COLOR = (20, 20, 200)
 ROCK_COLOR = (70, 70, 70)
+LAVA_COLOR = (200, 70, 70)
 
 COLORS = (
     SAND_COLOR,
     WATER_COLOR,
     ROCK_COLOR,
+    LAVA_COLOR,
 )
 
 import taichi as ti
@@ -21,8 +23,10 @@ import utils
 def density_of_color(color):
     density = ti.cast(0, ti.i32)
     if (utils.is_color(color, ROCK_COLOR)):
-        density = ti.cast(3, ti.i32)
+        density = ti.cast(4, ti.i32)
     elif (utils.is_color(color, SAND_COLOR)):
+        density = ti.cast(3, ti.i32)
+    elif (utils.is_color(color, LAVA_COLOR)):
         density = ti.cast(2, ti.i32)
     elif (utils.is_color(color, WATER_COLOR)):
         density = ti.cast(1, ti.i32)

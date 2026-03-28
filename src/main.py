@@ -38,6 +38,7 @@ def main():
         consts.SAND_COLOR:      pygame.K_q,
         consts.WATER_COLOR:     pygame.K_w,
         consts.ROCK_COLOR:      pygame.K_r,
+        consts.LAVA_COLOR:      pygame.K_e,
     }
     
     pygame.init()
@@ -52,8 +53,10 @@ def main():
     update_fps = 60
     sim_accumulator = 0.0
     sim_fps = 60
-    ticks_per_tick = 10
+    ticks_per_tick = 3
     current_color = consts.SAND_COLOR
+    
+    simulate(pixels_current, pixels_next, pixel_intents, pixel_directions)
 
     while running:
         for event in pygame.event.get():

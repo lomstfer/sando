@@ -4,6 +4,14 @@ import utils
 
 
 @ti.func
+def can_set_intent_to(x, y, tx, ty, pixels):
+    can = False
+    if utils.in_view(tx, ty, pixels):
+        can = utils.is_heavier(x, y, tx, ty, pixels)
+    return can
+
+
+@ti.func
 def falling_intent(x, y, intents, pixels) -> bool:
     intent = False
     if utils.in_view(x, y+1, pixels):
@@ -18,12 +26,10 @@ def sand_slide_intent(x, y, intents, pixels) -> bool:
     can_slide_left = False
     can_slide_right = False
 
-    if utils.in_view(x+1, y+1, pixels):
-        if utils.is_empty(x+1, y+1, pixels) or utils.is_heavier(x, y, x+1, y+1, pixels):
-            can_slide_right = True
+    if can_set_intent_to(x, y, x+1, y+1, pixels):
+        can_slide_right = True
 
-    if utils.in_view(x-1, y+1, pixels):
-        if utils.is_empty(x-1, y+1, pixels) or utils.is_heavier(x, y, x-1, y+1, pixels):
+    if can_set_intent_to(x, y, x-1, y+1, pixels):
             can_slide_left = True
     
     if can_slide_left and can_slide_right:
@@ -38,16 +44,14 @@ def sand_slide_intent(x, y, intents, pixels) -> bool:
 
 
 @ti.func
-def water_slide_intent(x, y, intents, directions, pixels) -> bool:
+def fluid_slide_intent(x, y, intents, directions, pixels) -> bool:
     can_slide_left = False
     can_slide_right = False
 
-    if utils.in_view(x+1, y, pixels):
-        if utils.is_empty(x+1, y, pixels):
+    if can_set_intent_to(x, y, x+1, y, pixels):
             can_slide_right = True
 
-    if utils.in_view(x-1, y, pixels):
-        if utils.is_empty(x-1, y, pixels):
+    if can_set_intent_to(x, y, x-1, y, pixels):
             can_slide_left = True
     
     if can_slide_left and can_slide_right:
@@ -96,13 +100,19 @@ def do_water_intents(x, y, intents, directions, pixels):
 
     elif falling_intent(x, y, intents, pixels):
         pass
-    elif water_slide_intent(x, y, intents, directions, pixels):
+    elif fluid_slide_intent(x, y, intents, directions, pixels):
         pass
 
 
 @ti.func
 def do_rock_intents(x, y, intents, pixels):
     pass
+
+
+@ti.func
+def do_lava_intents(x, y, intents, directions, pixels):
+    do_water_intents(x, y, intents, directions, pixels)
+
 
 
 @ti.kernel
@@ -122,6 +132,8 @@ def update_intents(pixels: ti.template(),
             do_water_intents(x, y, intents, directions, pixels)
         elif utils.is_color(col, consts.ROCK_COLOR):
             do_rock_intents(x, y, intents, pixels)
+        elif utils.is_color(col, consts.LAVA_COLOR):
+            do_lava_intents(x, y, intents, directions, pixels)
 
 
 @ti.kernel
