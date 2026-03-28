@@ -35,8 +35,9 @@ def main():
     pixel_directions = ti.Vector.field(2, ti.i8, shape=(consts.WIDTH, consts.HEIGHT))
     
     material_keybinds = {
-        consts.SAND_COLOR:     pygame.K_q,
-        consts.WATER_COLOR:    pygame.K_w,
+        consts.SAND_COLOR:      pygame.K_q,
+        consts.WATER_COLOR:     pygame.K_w,
+        consts.ROCK_COLOR:      pygame.K_r,
     }
     
     pygame.init()

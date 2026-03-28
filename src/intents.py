@@ -100,6 +100,11 @@ def do_water_intents(x, y, intents, directions, pixels):
         pass
 
 
+@ti.func
+def do_rock_intents(x, y, intents, pixels):
+    pass
+
+
 @ti.kernel
 def update_intents(pixels: ti.template(), 
                    color_to_update: ti.types.vector(3, ti.u8),
@@ -115,6 +120,8 @@ def update_intents(pixels: ti.template(),
             do_sand_intents(x, y, intents, pixels)
         elif utils.is_color(col, consts.WATER_COLOR):
             do_water_intents(x, y, intents, directions, pixels)
+        elif utils.is_color(col, consts.ROCK_COLOR):
+            do_rock_intents(x, y, intents, pixels)
 
 
 @ti.kernel
