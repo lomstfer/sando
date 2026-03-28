@@ -4,12 +4,20 @@ import utils
 
 
 @ti.func
-def falling_intent(x, y, intents, pixels) -> bool:
+def can_set_intent_to(x, y, tx, ty, pixels):
+    can = False
+    if utils.in_view(tx, ty, pixels):
+        # TODO: check direction for density?
+        can = utils.is_heavier(x, y, tx, ty, pixels)
+    return can
+
+
+@ti.func
+def direction_intent(x, y, dx, dy, intents, pixels) -> bool:
     intent = False
-    if utils.in_view(x, y+1, pixels):
-        if utils.is_empty(x, y+1, pixels) or utils.is_heavier(x, y, x, y+1, pixels):
-            utils.set_2Dvec(x, y, ti.cast(0, ti.i8), ti.cast(1, ti.i8), intents)
-            intent = True
+    if can_set_intent_to(x, y, x+dx, y+dy, pixels):
+        utils.set_2Dvec(x, y, ti.cast(dx, ti.i8), ti.cast(dy, ti.i8), intents)
+        intent = True
     return intent
 
 
@@ -18,12 +26,10 @@ def sand_slide_intent(x, y, intents, pixels) -> bool:
     can_slide_left = False
     can_slide_right = False
 
-    if utils.in_view(x+1, y+1, pixels):
-        if utils.is_empty(x+1, y+1, pixels) or utils.is_heavier(x, y, x+1, y+1, pixels):
-            can_slide_right = True
+    if can_set_intent_to(x, y, x+1, y+1, pixels):
+        can_slide_right = True
 
-    if utils.in_view(x-1, y+1, pixels):
-        if utils.is_empty(x-1, y+1, pixels) or utils.is_heavier(x, y, x-1, y+1, pixels):
+    if can_set_intent_to(x, y, x-1, y+1, pixels):
             can_slide_left = True
     
     if can_slide_left and can_slide_right:
@@ -38,16 +44,14 @@ def sand_slide_intent(x, y, intents, pixels) -> bool:
 
 
 @ti.func
-def water_slide_intent(x, y, intents, directions, pixels) -> bool:
+def fluid_slide_intent(x, y, intents, directions, pixels) -> bool:
     can_slide_left = False
     can_slide_right = False
 
-    if utils.in_view(x+1, y, pixels):
-        if utils.is_empty(x+1, y, pixels):
+    if can_set_intent_to(x, y, x+1, y, pixels):
             can_slide_right = True
 
-    if utils.in_view(x-1, y, pixels):
-        if utils.is_empty(x-1, y, pixels):
+    if can_set_intent_to(x, y, x-1, y, pixels):
             can_slide_left = True
     
     if can_slide_left and can_slide_right:
@@ -83,59 +87,113 @@ def do_sand_intents(x, y, intents, pixels):
     if has_neighbour_with_intent_to_it(x, y, pixels, intents):
         pass
 
-    elif falling_intent(x, y, intents, pixels):
+    elif direction_intent(x, y, 0, 1, intents, pixels):
         pass
     elif sand_slide_intent(x, y, intents, pixels):
         pass
 
 
 @ti.func
-def do_water_intents(x, y, intents, directions, pixels):
+def do_water_intents(x, y, intents, directions, pixels):    
     if has_neighbour_with_intent_to_it(x, y, pixels, intents):
         pass
 
-    elif falling_intent(x, y, intents, pixels):
+    elif direction_intent(x, y, 0, 1, intents, pixels):
         pass
-    elif water_slide_intent(x, y, intents, directions, pixels):
+    elif fluid_slide_intent(x, y, intents, directions, pixels):
+        pass
+
+
+@ti.func
+def water_close_to_lava(x, y, pixels):
+    n_count, neighbours = utils.nonempty_neighbours(x, y, pixels)
+    turned = False
+    for i in range(n_count):
+        nx = neighbours[i, 0]
+        ny = neighbours[i, 1]
+        if utils.is_color(utils.get_color(nx, ny, pixels), consts.LAVA_COLOR):
+            turned = True
+            break
+    return turned
+
+
+@ti.func
+def do_rock_intents(x, y, intents, pixels):
+    pass
+
+
+@ti.func
+def do_lava_intents(x, y, intents, directions, pixels):
+    if has_neighbour_with_intent_to_it(x, y, pixels, intents):
+        pass
+
+    elif direction_intent(x, y, 0, 1, intents, pixels):
+        pass
+    elif fluid_slide_intent(x, y, intents, directions, pixels):
+        pass
+
+
+@ti.func
+def do_steam_intents(x, y, intents, directions, pixels):
+    if has_neighbour_with_intent_to_it(x, y, pixels, intents):
+        pass
+
+    elif direction_intent(x, y, 0, -1, intents, pixels):
+        pass
+    elif fluid_slide_intent(x, y, intents, directions, pixels):
         pass
 
 
 @ti.kernel
-def update_intents(pixels: ti.template(), 
+def copy_stuf(after_transitions: ti.template(), 
+              next: ti.template()):
+    for x, y in ti.ndrange(consts.WIDTH, consts.HEIGHT):
+        col = utils.get_color(x, y, after_transitions)
+        utils.set_pixel(x, y, col, next)
+
+
+@ti.kernel
+def update_intents_and_transitions(pixels: ti.template(), 
+                   pixels_next: ti.template(), 
                    color_to_update: ti.types.vector(3, ti.u8),
                    intents: ti.template(), 
                    directions: ti.template()):
     for x, y in ti.ndrange(consts.WIDTH, consts.HEIGHT):
         col = utils.get_color(x, y, pixels)
-
+        
         if not utils.is_color(col, color_to_update):
             continue
         
         if utils.is_color(col, consts.SAND_COLOR):
             do_sand_intents(x, y, intents, pixels)
         elif utils.is_color(col, consts.WATER_COLOR):
-            do_water_intents(x, y, intents, directions, pixels)
+            if water_close_to_lava(x, y, pixels):
+                utils.set_pixel(x, y, consts.STEAM_COLOR, pixels_next)
+            else:
+                do_water_intents(x, y, intents, directions, pixels)
+        elif utils.is_color(col, consts.ROCK_COLOR):
+            do_rock_intents(x, y, intents, pixels)
+        elif utils.is_color(col, consts.LAVA_COLOR):
+            do_lava_intents(x, y, intents, directions, pixels)
+        elif utils.is_color(col, consts.STEAM_COLOR):
+            do_steam_intents(x, y, intents, directions, pixels)
 
 
 @ti.kernel
-def update_pixels_from_intents(current: ti.template(), 
-                               next: ti.template(), 
+def update_pixels_from_intents(pixels: ti.template(), 
                                intents: ti.template(), 
                                directions: ti.template()):
     for x, y in ti.ndrange(consts.WIDTH, consts.HEIGHT):
-        utils.set_pixel(x, y, utils.get_color(x, y, current), next)
-    
-    for x, y in ti.ndrange(consts.WIDTH, consts.HEIGHT):
-        n_counts, n = utils.nonempty_neighbours_shuffled(x, y, current)
-        this_col = utils.get_color(x, y, current)
+        n_counts, n = utils.nonempty_neighbours_shuffled(x, y, pixels)
+        this_col = utils.get_color(x, y, pixels)
         for i in range(n_counts):
             nx = n[i, 0]
             ny = n[i, 1]
             ix, iy = x - nx, y - ny
             if utils.has_2Dvec(nx, ny, ix, iy, intents):
-                col = utils.get_color(nx, ny, current)
-                utils.set_pixel(x, y, col, next)
-                utils.set_pixel(nx, ny, this_col, next)
+                col = utils.get_color(nx, ny, pixels)
+                utils.set_pixel(x, y, col, pixels)
+                utils.set_pixel(nx, ny, this_col, pixels)
                 utils.set_2Dvec(x, y, ix, iy, directions)
                 if not utils.is_color(col, consts.EMPTY_COLOR):
                     utils.set_2Dvec(nx, ny, -ix, -iy, directions)

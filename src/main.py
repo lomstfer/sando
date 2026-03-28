@@ -5,38 +5,50 @@ import utils
 import consts
 
 
-def simulate(pixels_current, 
+def simulate(pixels_current,
              pixels_next, 
              pixel_intents,
              pixel_directions):
     
     pixel_intents.fill(0)
 
+    pixels_next.copy_from(pixels_current)
+
     for color in consts.COLORS:
-        intents.update_intents(pixels_current,
+        intents.update_intents_and_transitions(pixels_current,
+                               pixels_next,
                                color,
                                pixel_intents, 
                                pixel_directions,
                             )
     
 
-    intents.update_pixels_from_intents(pixels_current, 
-                                       pixels_next, 
+    intents.update_pixels_from_intents(pixels_next, 
                                        pixel_intents, 
                                        pixel_directions)
 
 
 def main():
-    ti.init(arch=ti.gpu)
+    ti.init(arch=ti.gpu, offline_cache=True)
     pixels_current = ti.Vector.field(3, ti.u8, shape=(consts.WIDTH, consts.HEIGHT))
-    pixels_next = ti.Vector.field(3, ti.u8, shape=(consts.WIDTH, consts.HEIGHT))
     pixels_current.fill(consts.EMPTY_COLOR[0])
+    pixels_next = ti.Vector.field(3, ti.u8, shape=(consts.WIDTH, consts.HEIGHT))
     pixel_intents = ti.Vector.field(2, ti.i8, shape=(consts.WIDTH, consts.HEIGHT))
     pixel_directions = ti.Vector.field(2, ti.i8, shape=(consts.WIDTH, consts.HEIGHT))
     
+    print("Compiling Taichi kernels... This may take a moment.")
+    simulate(pixels_current, pixels_next, pixel_intents, pixel_directions)
+    simulate(pixels_current, pixels_next, pixel_intents, pixel_directions)
+    pixels_current.fill(consts.EMPTY_COLOR[0])
+    pixels_next.fill(consts.EMPTY_COLOR[0])
+    print("Compilation finished!")
+
     material_keybinds = {
-        consts.SAND_COLOR:     pygame.K_q,
-        consts.WATER_COLOR:    pygame.K_w,
+        consts.SAND_COLOR:      pygame.K_q,
+        consts.WATER_COLOR:     pygame.K_w,
+        consts.ROCK_COLOR:      pygame.K_r,
+        consts.LAVA_COLOR:      pygame.K_e,
+        consts.STEAM_COLOR:     pygame.K_s,
     }
     
     pygame.init()
@@ -50,10 +62,10 @@ def main():
     running = True
     update_fps = 60
     sim_accumulator = 0.0
-    sim_fps = 60
-    ticks_per_tick = 10
+    sim_target_fps = 60
+    ticks_per_tick = 1
     current_color = consts.SAND_COLOR
-
+    
     while running:
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
@@ -64,11 +76,11 @@ def main():
         keys = pygame.key.get_pressed()
         keys_jp = pygame.key.get_just_pressed()
 
-        if keys[pygame.K_UP]:
-            sim_fps += 1 + int(0.03 * sim_fps)
+        if keys_jp[pygame.K_UP]:
+            sim_target_fps += 5
 
-        if keys[pygame.K_DOWN]:
-            sim_fps = max(1, sim_fps - 1)
+        if keys_jp[pygame.K_DOWN]:
+            sim_target_fps = max(0, sim_target_fps - 5)
 
         for col, k in material_keybinds.items():
             if keys_jp[k]:
@@ -90,12 +102,15 @@ def main():
         dt = clock.tick(update_fps) / 1000.0
         time_elapsed += dt
 
-        sim_accumulator += dt
-        while sim_accumulator > 1 / sim_fps:
-            sim_accumulator -= 1 / sim_fps
-            for _ in range(ticks_per_tick):
-                simulate(pixels_current, pixels_next, pixel_intents, pixel_directions)
-                pixels_current, pixels_next = pixels_next, pixels_current
+        if sim_target_fps > 0:
+            sim_accumulator += dt
+            if sim_accumulator > 1 / sim_target_fps:
+                sim_accumulator = 0
+                for _ in range(ticks_per_tick):
+                    simulate(pixels_current, pixels_next, pixel_intents, pixel_directions)
+                    pixels_current, pixels_next = pixels_next, pixels_current
+
+       
 
         # draw ----------------------
         frame = pixels_current.to_numpy()
