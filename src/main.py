@@ -37,8 +37,8 @@ def main():
     pixel_directions = ti.Vector.field(2, ti.i8, shape=(consts.WIDTH, consts.HEIGHT))
     
     print("Compiling Taichi kernels... This may take a moment.")
-    simulate(pixels_current, pixels_next, pixel_intents, pixel_directions)
-    simulate(pixels_current, pixels_next, pixel_intents, pixel_directions)
+    for _ in range(100):
+        simulate(pixels_current, pixels_next, pixel_intents, pixel_directions)
     pixels_current.fill(consts.EMPTY_COLOR[0])
     pixels_next.fill(consts.EMPTY_COLOR[0])
     print("Compilation finished!")
@@ -77,10 +77,10 @@ def main():
         keys_jp = pygame.key.get_just_pressed()
 
         if keys_jp[pygame.K_UP]:
-            sim_target_fps += 5
+            ticks_per_tick += 1
 
         if keys_jp[pygame.K_DOWN]:
-            sim_target_fps = max(0, sim_target_fps - 5)
+            ticks_per_tick = max(0, ticks_per_tick - 1)
 
         for col, k in material_keybinds.items():
             if keys_jp[k]:

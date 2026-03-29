@@ -105,13 +105,13 @@ def do_water_intents(x, y, intents, directions, pixels):
 
 
 @ti.func
-def water_close_to_lava(x, y, pixels):
+def is_next_to_col(x, y, col, pixels):
     n_count, neighbours = utils.nonempty_neighbours(x, y, pixels)
     turned = False
     for i in range(n_count):
         nx = neighbours[i, 0]
         ny = neighbours[i, 1]
-        if utils.is_color(utils.get_color(nx, ny, pixels), consts.LAVA_COLOR):
+        if utils.is_color(utils.get_color(nx, ny, pixels), col):
             turned = True
             break
     return turned
@@ -145,14 +145,6 @@ def do_steam_intents(x, y, intents, directions, pixels):
 
 
 @ti.kernel
-def copy_stuf(after_transitions: ti.template(), 
-              next: ti.template()):
-    for x, y in ti.ndrange(consts.WIDTH, consts.HEIGHT):
-        col = utils.get_color(x, y, after_transitions)
-        utils.set_pixel(x, y, col, next)
-
-
-@ti.kernel
 def update_intents_and_transitions(pixels: ti.template(), 
                    pixels_next: ti.template(), 
                    color_to_update: ti.types.vector(3, ti.u8),
@@ -167,14 +159,17 @@ def update_intents_and_transitions(pixels: ti.template(),
         if utils.is_color(col, consts.SAND_COLOR):
             do_sand_intents(x, y, intents, pixels)
         elif utils.is_color(col, consts.WATER_COLOR):
-            if water_close_to_lava(x, y, pixels):
+            if is_next_to_col(x, y, consts.LAVA_COLOR, pixels):
                 utils.set_pixel(x, y, consts.STEAM_COLOR, pixels_next)
             else:
                 do_water_intents(x, y, intents, directions, pixels)
         elif utils.is_color(col, consts.ROCK_COLOR):
             do_rock_intents(x, y, intents, pixels)
         elif utils.is_color(col, consts.LAVA_COLOR):
-            do_lava_intents(x, y, intents, directions, pixels)
+            if is_next_to_col(x, y, consts.WATER_COLOR, pixels):
+                utils.set_pixel(x, y, consts.ROCK_COLOR, pixels_next)
+            else:
+                do_lava_intents(x, y, intents, directions, pixels)
         elif utils.is_color(col, consts.STEAM_COLOR):
             do_steam_intents(x, y, intents, directions, pixels)
 
