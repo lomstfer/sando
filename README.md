@@ -1,5 +1,5 @@
 ### About
-Sand simulation on the GPU made with [pygame](https://pypi.org/project/pygame-ce/) and [Taichi](https://www.taichi-lang.org/).
+Particle simulation on the GPU made with [pygame](https://pypi.org/project/pygame-ce/) and [Taichi](https://www.taichi-lang.org/).
 
 This project uses [uv](https://github.com/astral-sh/uv) for Python package management and virtual environment resolution. Run with `uv run src/main.py`.
 
